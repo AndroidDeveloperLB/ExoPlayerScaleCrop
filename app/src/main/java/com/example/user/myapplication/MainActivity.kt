@@ -75,22 +75,20 @@ class MainActivity : AppCompatActivity() {
     private fun playVideo() {
         player = ExoPlayerFactory.newSimpleInstance(this@MainActivity, DefaultTrackSelector())
         player!!.setVideoTextureView(textureView)
-        //        player!!.videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
-        //        playerView.player = player
         player!!.addVideoListener(object : VideoListener {
+            override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
+                super.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio)
+                Log.d("AppLog", "onVideoSizeChanged: $width $height")
+                val videoWidth = if (width % 180 == 0) width else height
+                val videoHeight = if (height % 180 == 0) height else width
+                val matrix = prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat())
+                textureView.setTransform(matrix)
+            }
+
             override fun onRenderedFirstFrame() {
+                Log.d("AppLog", "onRenderedFirstFrame")
                 player!!.removeVideoListener(this)
-                val videoWidth = if (player!!.videoFormat.rotationDegrees % 180 == 0) player!!.videoFormat.width else player!!.videoFormat.height
-                val videoHeight = if (player!!.videoFormat.rotationDegrees % 180 == 0) player!!.videoFormat.height else player!!.videoFormat.width
-                if (videoWidth <= 0 || videoHeight <= 0) {
-                    //TODO check if we should handle this case, and revert to center-crop . This doesn't work :
-                    //                player!!.videoScalingMode = C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
-                } else {
-//                    https://github.com/dmytrodanylyk/video-crop/blob/master/library/src/com/dd/crop/TextureVideoView.java
-                    val matrix = prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat())
-                    textureView.setTransform(matrix)
-                    imageView.visibility = View.INVISIBLE
-                }
+                imageView.visibility = View.INVISIBLE
             }
         })
         player!!.volume = 0f
