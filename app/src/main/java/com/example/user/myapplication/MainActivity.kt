@@ -97,7 +97,7 @@ class MainActivity : AppCompatActivity() {
             override fun onRenderedFirstFrame() {
                 Log.d("AppLog", "onRenderedFirstFrame")
                 player!!.removeVideoListener(this)
-//                imageView.visibility = View.INVISIBLE
+                imageView.visibility = View.INVISIBLE
             }
         })
         player!!.volume = 0f
