@@ -58,8 +58,8 @@ class MainActivity : AppCompatActivity() {
     private fun prepareMatrix(view: View, contentWidth: Float, contentHeight: Float): Matrix {
         var scaleX = 1.0f
         var scaleY = 1.0f
-        val viewWidth = view.width.toFloat()
-        val viewHeight = view.height.toFloat()
+        val viewWidth = view.measuredWidth.toFloat()
+        val viewHeight = view.measuredHeight.toFloat()
         Log.d("AppLog", "viewWidth $viewWidth viewHeight $viewHeight contentWidth:$contentWidth contentHeight:$contentHeight")
         if (contentWidth > viewWidth && contentHeight > viewHeight) {
             scaleX = contentWidth / viewWidth
