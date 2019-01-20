@@ -19,7 +19,7 @@
 
         <ImageView
             android:id="@+id/imageView" android:layout_width="match_parent" android:layout_height="match_parent"
-            android:scaleType="matrix" android:src="@drawable/test"/>
+            android:scaleType="matrix" />
     </androidx.cardview.widget.CardView>
 
 </FrameLayout>

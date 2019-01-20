@@ -28,6 +28,8 @@ import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
+    private val imageResId = R.drawable.test
+    private val videoResId = R.raw.test
     private var player: SimpleExoPlayer? = null
 
 
@@ -38,9 +40,11 @@ class MainActivity : AppCompatActivity() {
             cache = SimpleCache(File(cacheDir, "media"), LeastRecentlyUsedCacheEvictor(MAX_PREVIEW_CACHE_SIZE_IN_BYTES))
         }
         setContentView(R.layout.activity_main)
-        imageView.visibility = View.VISIBLE
+//        imageView.visibility = View.INVISIBLE
+        imageView.setImageResource(imageResId)
         imageView.doOnPreDraw {
             imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
+//            imageView.visibility = View.VISIBLE
         }
     }
 
@@ -55,6 +59,10 @@ class MainActivity : AppCompatActivity() {
         val viewWidth = view.width.toFloat()
         val viewHeight = view.height.toFloat()
         Log.d("AppLog", "viewWidth $viewWidth viewHeight $viewHeight contentWidth:$contentWidth contentHeight:$contentHeight")
+//        val scale = if (contentWidth * viewHeight > contentHeight * viewWidth)
+//            contentHeight / viewHeight
+//        else
+//            contentWidth / viewWidth
         if (contentWidth > viewWidth && contentHeight > viewHeight) {
             scaleX = contentWidth / viewWidth
             scaleY = contentHeight / viewHeight
@@ -66,9 +74,10 @@ class MainActivity : AppCompatActivity() {
         else if (viewHeight > contentHeight)
             scaleX = viewHeight / contentHeight / (viewWidth / contentWidth)
         val matrix = Matrix()
-        val pivotPercentageLeft = 0.5f
-        val pivotPercentageTop = 0.1f
-        matrix.setScale(scaleX, scaleY, viewWidth * pivotPercentageLeft, viewHeight * pivotPercentageTop)
+        val pivotPercentageX = 0.5f
+        val pivotPercentageY = 0.1f
+
+        matrix.setScale(scaleX, scaleY, viewWidth * pivotPercentageX, viewHeight * pivotPercentageY)
         return matrix
     }
 
@@ -79,8 +88,8 @@ class MainActivity : AppCompatActivity() {
             override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
                 super.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio)
                 Log.d("AppLog", "onVideoSizeChanged: $width $height")
-                val videoWidth = if (width % 180 == 0) width else height
-                val videoHeight = if (height % 180 == 0) height else width
+                val videoWidth = if (unappliedRotationDegrees % 180 == 0) width else height
+                val videoHeight = if (unappliedRotationDegrees % 180 == 0) height else width
                 val matrix = prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat())
                 textureView.setTransform(matrix)
             }
@@ -88,12 +97,12 @@ class MainActivity : AppCompatActivity() {
             override fun onRenderedFirstFrame() {
                 Log.d("AppLog", "onRenderedFirstFrame")
                 player!!.removeVideoListener(this)
-                imageView.visibility = View.INVISIBLE
+//                imageView.visibility = View.INVISIBLE
             }
         })
         player!!.volume = 0f
         player!!.repeatMode = Player.REPEAT_MODE_ALL
-        player!!.playRawVideo(this, R.raw.test)
+        player!!.playRawVideo(this, videoResId)
         player!!.playWhenReady = true
         //        player!!.playVideoFromUrl(this, "https://sample-videos.com/video123/mkv/240/big_buck_bunny_240p_20mb.mkv", cache!!)
         //        player!!.playVideoFromUrl(this, "https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_1mb.mkv", cache!!)
