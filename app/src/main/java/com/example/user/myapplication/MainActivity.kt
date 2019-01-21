@@ -121,7 +121,7 @@ class MainActivity : AppCompatActivity() {
         player!!.addVideoListener(object : VideoListener {
             override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
                 super.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio)
-                Log.d("AppLog", "onVideoSizeChanged: $width $height")
+                Log.d("AppLog", "onVideoSizeChanged: $width,$height angle:$unappliedRotationDegrees")
                 val videoWidth = if (unappliedRotationDegrees % 180 == 0) width else height
                 val videoHeight = if (unappliedRotationDegrees % 180 == 0) height else width
                 val matrix = prepareMatrixForVideo(textureView, videoWidth.toFloat(), videoHeight.toFloat())
