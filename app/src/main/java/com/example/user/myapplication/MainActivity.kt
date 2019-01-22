@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
 //        imageView.visibility = View.INVISIBLE
         imageView.setImageResource(imageResId)
         imageView.doOnPreDraw {
-            imageView.imageMatrix = prepareMatrixForImageView(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
+            imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
 //            imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
 //            imageView.visibility = View.VISIBLE
         }
@@ -56,75 +56,22 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun prepareMatrix(view: View, contentWidth: Float, contentHeight: Float): Matrix {
-        var scaleX = 1.0f
-        var scaleY = 1.0f
         val viewWidth = view.measuredWidth.toFloat()
         val viewHeight = view.measuredHeight.toFloat()
-        Log.d("AppLog", "viewWidth $viewWidth viewHeight $viewHeight contentWidth:$contentWidth contentHeight:$contentHeight")
-        if (contentWidth > viewWidth && contentHeight > viewHeight) {
-            scaleX = contentWidth / viewWidth
-            scaleY = contentHeight / viewHeight
-        } else if (contentWidth < viewWidth && contentHeight < viewHeight) {
-            scaleY = viewWidth / contentWidth
-            scaleX = viewHeight / contentHeight
-        } else if (viewWidth > contentWidth)
-            scaleY = viewWidth / contentWidth / (viewHeight / contentHeight)
-        else if (viewHeight > contentHeight)
-            scaleX = viewHeight / contentHeight / (viewWidth / contentWidth)
         val matrix = Matrix()
-        val pivotPercentageX = 0.5f
-        val pivotPercentageY = percentageY
-
-        matrix.setScale(scaleX, scaleY, viewWidth * pivotPercentageX, viewHeight * pivotPercentageY)
+        matrix.postScale(1.0f, (viewWidth * contentHeight) / (viewHeight * contentWidth), viewWidth / 2, viewHeight * percentageY)
         return matrix
     }
 
-    private fun prepareMatrixForVideo(view: View, contentWidth: Float, contentHeight: Float): Matrix {
-        val msWidth = view.measuredWidth
-        val msHeight = view.measuredHeight
-        val matrix = Matrix()
-        matrix.setScale(1f, (contentHeight / contentWidth) * (msWidth.toFloat() / msHeight), msWidth / 2f, percentageY * msHeight) /*,msWidth/2f,msHeight/2f*/
-        return matrix
-    }
-
-    private fun prepareMatrixForImageView(view: View, contentWidth: Float, contentHeight: Float): Matrix {
-        val dw = contentWidth
-        val dh = contentHeight
-        val msWidth = view.measuredWidth
-        val msHeight = view.measuredHeight
-//        Log.d("AppLog", "viewWidth $msWidth viewHeight $msHeight contentWidth:$contentWidth contentHeight:$contentHeight")
-        val scalew = msWidth.toFloat() / dw
-        val theoryh = (dh * scalew).toInt()
-        val scaleh = msHeight.toFloat() / dh
-        val theoryw = (dw * scaleh).toInt()
-        val scale: Float
-        var dx = 0
-        var dy = 0
-        if (scalew > scaleh) { // fit width
-            scale = scalew
-//            dy = ((msHeight - theoryh) * 0.0f + 0.5f).toInt() // + 0.5f for rounding
-        } else {
-            scale = scaleh
-            dx = ((msWidth - theoryw) * 0.5f + 0.5f).toInt() // + 0.5f for rounding
-        }
-        dy = ((msHeight - theoryh) * percentageY + 0.5f).toInt() // + 0.5f for rounding
-        val matrix = Matrix()
-//        Log.d("AppLog", "scale:$scale dx:$dx dy:$dy")
-        matrix.setScale(scale, scale)
-        matrix.postTranslate(dx.toFloat(), dy.toFloat())
-        return matrix
-    }
 
     private fun playVideo() {
         player = ExoPlayerFactory.newSimpleInstance(this@MainActivity, DefaultTrackSelector())
         player!!.setVideoTextureView(textureView)
         player!!.addVideoListener(object : VideoListener {
-            override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
-                super.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio)
-                Log.d("AppLog", "onVideoSizeChanged: $width,$height angle:$unappliedRotationDegrees")
-                val videoWidth = if (unappliedRotationDegrees % 180 == 0) width else height
-                val videoHeight = if (unappliedRotationDegrees % 180 == 0) height else width
-                val matrix = prepareMatrixForVideo(textureView, videoWidth.toFloat(), videoHeight.toFloat())
+            override fun onVideoSizeChanged(videoWidth: Int, videoHeight: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
+                super.onVideoSizeChanged(videoWidth, videoHeight, unappliedRotationDegrees, pixelWidthHeightRatio)
+                Log.d("AppLog", "onVideoSizeChanged: $videoWidth,$videoHeight angle:$unappliedRotationDegrees")
+                val matrix = prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat())
                 textureView.setTransform(matrix)
             }
 
