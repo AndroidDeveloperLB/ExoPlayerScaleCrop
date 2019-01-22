@@ -7,8 +7,10 @@ import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.ImageView
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.view.doOnPreDraw
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
@@ -44,7 +46,16 @@ class MainActivity : AppCompatActivity() {
 //        imageView.visibility = View.INVISIBLE
         imageView.setImageResource(imageResId)
         imageView.doOnPreDraw {
-            imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
+            imageView.scaleType = ImageView.ScaleType.MATRIX
+            val matrix = Matrix()
+            val imageWidth: Float = ContextCompat.getDrawable(this, imageResId)!!.intrinsicWidth.toFloat()
+            val viewWidth: Float = imageView.width.toFloat()
+            val scaleFactor = viewWidth / imageWidth
+            matrix.postScale(scaleFactor, scaleFactor, 0f, 0f)
+//            matrix.postTranslate(0f, additionalTranslationY)
+            imageView.imageMatrix = matrix
+            imageView.setImageResource(imageResId)
+//            imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
 //            imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
 //            imageView.visibility = View.VISIBLE
         }
@@ -55,23 +66,23 @@ class MainActivity : AppCompatActivity() {
         playVideo()
     }
 
-    private fun prepareMatrix(view: View, contentWidth: Float, contentHeight: Float): Matrix {
-        val viewWidth = view.measuredWidth.toFloat()
-        val viewHeight = view.measuredHeight.toFloat()
-        val matrix = Matrix()
-        matrix.postScale(1.0f, (viewWidth * contentHeight) / (viewHeight * contentWidth), viewWidth / 2, viewHeight * percentageY)
-        return matrix
-    }
-
-
     private fun playVideo() {
         player = ExoPlayerFactory.newSimpleInstance(this@MainActivity, DefaultTrackSelector())
         player!!.setVideoTextureView(textureView)
         player!!.addVideoListener(object : VideoListener {
-            override fun onVideoSizeChanged(videoWidth: Int, videoHeight: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
-                super.onVideoSizeChanged(videoWidth, videoHeight, unappliedRotationDegrees, pixelWidthHeightRatio)
-                Log.d("AppLog", "onVideoSizeChanged: $videoWidth,$videoHeight angle:$unappliedRotationDegrees")
-                val matrix = prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat())
+            override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
+                super.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio)
+                Log.d("AppLog", "onVideoSizeChanged: $width,$height angle:$unappliedRotationDegrees")
+//                val matrix = prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat())
+                val matrix = Matrix()
+                val viewWidth = textureView.width.toFloat()
+                val viewHeight = textureView.height.toFloat()
+                val videoWidth = width.toFloat()
+                val videoHeight = height.toFloat()
+                val scaleX = 1.0f
+                val scaleY: Float = (viewWidth / viewHeight) * (videoHeight / videoWidth)
+                matrix.postScale(scaleX, scaleY, 0f, 0f)
+//                matrix.postTranslate(0f, additionalTranslationY)
                 textureView.setTransform(matrix)
             }
 
