@@ -10,7 +10,6 @@ import android.view.View
 import android.widget.ImageView
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.ContextCompat
 import androidx.core.view.doOnPreDraw
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
@@ -28,13 +27,13 @@ import com.google.android.exoplayer2.video.VideoListener
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.File
 
-
+// https://stackoverflow.com/questions/54216273/how-to-have-similar-mechanism-of-center-crop-on-exoplayers-playerview-but-not
 class MainActivity : AppCompatActivity() {
     private val imageResId = R.drawable.test
     private val videoResId = R.raw.test
-    private val percentageY = 0.2f
     private var player: SimpleExoPlayer? = null
-
+    // How much image to crop from the top. 0.5 is the top half of the image. 1.0f is all of it.
+    private val cropPercentage = 1.0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         window.setBackgroundDrawable(ColorDrawable(0xff000000.toInt()))
@@ -43,27 +42,46 @@ class MainActivity : AppCompatActivity() {
             cache = SimpleCache(File(cacheDir, "media"), LeastRecentlyUsedCacheEvictor(MAX_PREVIEW_CACHE_SIZE_IN_BYTES))
         }
         setContentView(R.layout.activity_main)
-//        imageView.visibility = View.INVISIBLE
+        //        imageView.visibility = View.INVISIBLE
         imageView.setImageResource(imageResId)
         imageView.doOnPreDraw {
             imageView.scaleType = ImageView.ScaleType.MATRIX
-            val matrix = Matrix()
-            val imageWidth: Float = ContextCompat.getDrawable(this, imageResId)!!.intrinsicWidth.toFloat()
-            val viewWidth: Float = imageView.width.toFloat()
-            val scaleFactor = viewWidth / imageWidth
-            matrix.postScale(scaleFactor, scaleFactor, 0f, 0f)
-//            matrix.postTranslate(0f, additionalTranslationY)
-            imageView.imageMatrix = matrix
-            imageView.setImageResource(imageResId)
-//            imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
-//            imageView.imageMatrix = prepareMatrix(imageView, imageView.drawable.intrinsicWidth.toFloat(), imageView.drawable.intrinsicHeight.toFloat())
-//            imageView.visibility = View.VISIBLE
+            val imageWidth = imageView.drawable.intrinsicWidth.toFloat()
+            val imageHeight = imageView.drawable.intrinsicHeight.toFloat()
+            imageView.imageMatrix = prepareMatrix(imageView, imageWidth, imageHeight, cropPercentage, Matrix())
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        playVideo()
+    private fun getViewWidth(view: View): Float {
+        return (view.width - view.paddingStart - view.paddingEnd).toFloat()
+    }
+
+    private fun getViewHeight(view: View): Float {
+        return (view.height - view.paddingTop - view.paddingBottom).toFloat()
+    }
+
+    private fun prepareMatrix(targetView: View, contentWidth: Float, contentHeight: Float, focalPercentageFromTop: Float, matrix: Matrix): Matrix {
+        if (targetView.visibility != View.VISIBLE)
+            return matrix
+        val viewHeight = getViewHeight(targetView)
+        val viewWidth = getViewWidth(targetView)
+        val scaleFactorY = viewHeight / contentHeight
+        val scaleFactor: Float
+        val px: Float
+        val py: Float
+        if (contentWidth * scaleFactorY >= viewWidth) {
+            // Fit height
+            scaleFactor = scaleFactorY
+            px = -(contentWidth * scaleFactor - viewWidth) / 2 / (1 - scaleFactor)
+            py = 0f
+        } else {
+            // Fit width
+            scaleFactor = viewWidth / contentWidth
+            px = 0f
+            py = -(contentHeight * scaleFactor - viewHeight) * focalPercentageFromTop / (1 - scaleFactor)
+        }
+        matrix.postScale(scaleFactor, scaleFactor, px, py)
+        return matrix
     }
 
     private fun playVideo() {
@@ -72,25 +90,17 @@ class MainActivity : AppCompatActivity() {
         player!!.addVideoListener(object : VideoListener {
             override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
                 super.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio)
-                Log.d("AppLog", "onVideoSizeChanged: $width,$height angle:$unappliedRotationDegrees")
-//                val matrix = prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat())
                 val matrix = Matrix()
-                val viewWidth = textureView.width.toFloat()
-                val viewHeight = textureView.height.toFloat()
-                val videoWidth = width.toFloat()
-                val videoHeight = height.toFloat()
-                val scaleX = 1.0f
-                val scaleY: Float = (viewWidth / viewHeight) * (videoHeight / videoWidth)
-                matrix.postScale(scaleX, scaleY, 0f, 0f)
-//                matrix.postTranslate(0f, additionalTranslationY)
-                textureView.setTransform(matrix)
+                matrix.setScale(width / getViewWidth(textureView), height / getViewHeight(textureView))
+                textureView.setTransform(prepareMatrix(textureView, width.toFloat(), height.toFloat(), cropPercentage, matrix))
+
             }
 
             override fun onRenderedFirstFrame() {
                 Log.d("AppLog", "onRenderedFirstFrame")
                 player!!.removeVideoListener(this)
-//                imageView.animate().alpha(0f).setDuration(5000).start()
-                imageView.visibility = View.INVISIBLE
+                imageView.animate().alpha(0f).setDuration(2000).start()
+//                imageView.visibility = View.INVISIBLE
             }
         })
         player!!.volume = 0f
@@ -102,12 +112,19 @@ class MainActivity : AppCompatActivity() {
         //        player!!.playVideoFromUrl(this@MainActivity, "https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_1mb.mkv")
     }
 
+    override fun onStart() {
+        super.onStart()
+        playVideo()
+    }
+
     override fun onStop() {
         super.onStop()
-        player!!.setVideoTextureView(null)
-        //        playerView.player = null
-        player!!.release()
-        player = null
+        if (player != null) {
+            player!!.setVideoTextureView(null)
+            //        playerView.player = null
+            player!!.release()
+            player = null
+        }
     }
 
     companion object {
