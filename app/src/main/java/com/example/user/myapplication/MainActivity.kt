@@ -33,7 +33,7 @@ class MainActivity : AppCompatActivity() {
     private val videoResId = R.raw.test
     private var player: SimpleExoPlayer? = null
     // How much image to crop from the top. 0.5 is the top half of the image. 1.0f is all of it.
-    private val cropPercentage = 1.0f
+    private val cropPercentage = 0.2f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         window.setBackgroundDrawable(ColorDrawable(0xff000000.toInt()))
