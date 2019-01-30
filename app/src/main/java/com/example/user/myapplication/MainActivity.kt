@@ -2,12 +2,11 @@ package com.example.user.myapplication
 
 import android.content.Context
 import android.graphics.Matrix
-import android.graphics.drawable.ColorDrawable
+import android.graphics.PointF
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
+import android.view.TextureView
 import android.view.View
-import android.widget.ImageView
 import androidx.annotation.RawRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.doOnPreDraw
@@ -29,56 +28,56 @@ import java.io.File
 
 // https://stackoverflow.com/questions/54216273/how-to-have-similar-mechanism-of-center-crop-on-exoplayers-playerview-but-not
 class MainActivity : AppCompatActivity() {
-    private val imageResId = R.drawable.test
-    private val videoResId = R.raw.test
+    companion object {
+        private val FOCAL_POINT = PointF(0.5f, 0.2f)
+        private const val IMAGE_RES_ID = R.drawable.test
+        private const val VIDEO_RES_ID = R.raw.test
+        private var cache: Cache? = null
+        private const val MAX_PREVIEW_CACHE_SIZE_IN_BYTES = 20L * 1024L * 1024L
+
+        @JvmStatic
+        fun getUserAgent(context: Context): String {
+            val packageManager = context.packageManager
+            val info = packageManager.getPackageInfo(context.packageName, 0)
+            val appName = info.applicationInfo.loadLabel(packageManager).toString()
+            return Util.getUserAgent(context, appName)
+        }
+    }
+
     private var player: SimpleExoPlayer? = null
-    // How much image to crop from the top. 0.5 is the top half of the image. 1.0f is all of it.
-    private val cropPercentage = 0.2f
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        window.setBackgroundDrawable(ColorDrawable(0xff000000.toInt()))
         super.onCreate(savedInstanceState)
-        if (cache == null) {
-            cache = SimpleCache(File(cacheDir, "media"), LeastRecentlyUsedCacheEvictor(MAX_PREVIEW_CACHE_SIZE_IN_BYTES))
-        }
         setContentView(R.layout.activity_main)
+        if (cache == null)
+            cache = SimpleCache(File(cacheDir, "media"), LeastRecentlyUsedCacheEvictor(MAX_PREVIEW_CACHE_SIZE_IN_BYTES))
         //        imageView.visibility = View.INVISIBLE
-        imageView.setImageResource(imageResId)
-        imageView.doOnPreDraw {
-            imageView.scaleType = ImageView.ScaleType.MATRIX
-            val imageWidth = imageView.drawable.intrinsicWidth.toFloat()
-            val imageHeight = imageView.drawable.intrinsicHeight.toFloat()
-            imageView.imageMatrix = prepareMatrix(imageView, imageWidth, imageHeight, cropPercentage, Matrix())
-        }
+        imageView.setImageResource(IMAGE_RES_ID)
     }
 
-    private fun getViewWidth(view: View): Float {
-        return (view.width - view.paddingStart - view.paddingEnd).toFloat()
-    }
-
-    private fun getViewHeight(view: View): Float {
-        return (view.height - view.paddingTop - view.paddingBottom).toFloat()
-    }
-
-    private fun prepareMatrix(targetView: View, contentWidth: Float, contentHeight: Float, focalPercentageFromTop: Float, matrix: Matrix): Matrix {
-        if (targetView.visibility != View.VISIBLE)
-            return matrix
-        val viewHeight = getViewHeight(targetView)
-        val viewWidth = getViewWidth(targetView)
-        val scaleFactorY = viewHeight / contentHeight
+    private fun prepareMatrix(view: View, mediaWidth: Float, mediaHeight: Float, focalPoint: PointF): Matrix? {
+        if (view.visibility == View.GONE)
+            return null
+        val viewHeight = (view.height - view.paddingTop - view.paddingBottom).toFloat()
+        val viewWidth = (view.width - view.paddingStart - view.paddingEnd).toFloat()
+        if (viewWidth <= 0 || viewHeight <= 0)
+            return null
+        val matrix = Matrix()
+        if (view is TextureView)
+        // Restore true media size for further manipulation.
+            matrix.setScale(mediaWidth / viewWidth, mediaHeight / viewHeight)
+        val scaleFactorY = viewHeight / mediaHeight
         val scaleFactor: Float
-        val px: Float
-        val py: Float
-        if (contentWidth * scaleFactorY >= viewWidth) {
+        var px = 0f
+        var py = 0f
+        if (mediaWidth * scaleFactorY >= viewWidth) {
             // Fit height
             scaleFactor = scaleFactorY
-            px = -(contentWidth * scaleFactor - viewWidth) / 2 / (1 - scaleFactor)
-            py = 0f
+            px = -(mediaWidth * scaleFactor - viewWidth) * focalPoint.x / (1 - scaleFactor)
         } else {
             // Fit width
-            scaleFactor = viewWidth / contentWidth
-            px = 0f
-            py = -(contentHeight * scaleFactor - viewHeight) * focalPercentageFromTop / (1 - scaleFactor)
+            scaleFactor = viewWidth / mediaWidth
+            py = -(mediaHeight * scaleFactor - viewHeight) * focalPoint.y / (1 - scaleFactor)
         }
         matrix.postScale(scaleFactor, scaleFactor, px, py)
         return matrix
@@ -88,16 +87,13 @@ class MainActivity : AppCompatActivity() {
         player = ExoPlayerFactory.newSimpleInstance(this@MainActivity, DefaultTrackSelector())
         player!!.setVideoTextureView(textureView)
         player!!.addVideoListener(object : VideoListener {
-            override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
-                super.onVideoSizeChanged(width, height, unappliedRotationDegrees, pixelWidthHeightRatio)
-                val matrix = Matrix()
-                matrix.setScale(width / getViewWidth(textureView), height / getViewHeight(textureView))
-                textureView.setTransform(prepareMatrix(textureView, width.toFloat(), height.toFloat(), cropPercentage, matrix))
-
+            override fun onVideoSizeChanged(videoWidth: Int, videoHeight: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
+                super.onVideoSizeChanged(videoWidth, videoHeight, unappliedRotationDegrees, pixelWidthHeightRatio)
+                textureView.setTransform(prepareMatrix(textureView, videoWidth.toFloat(), videoHeight.toFloat(), FOCAL_POINT))
             }
 
             override fun onRenderedFirstFrame() {
-                Log.d("AppLog", "onRenderedFirstFrame")
+//                Log.d("AppLog", "onRenderedFirstFrame")
                 player!!.removeVideoListener(this)
                 imageView.animate().alpha(0f).setDuration(2000).start()
 //                imageView.visibility = View.INVISIBLE
@@ -105,7 +101,7 @@ class MainActivity : AppCompatActivity() {
         })
         player!!.volume = 0f
         player!!.repeatMode = Player.REPEAT_MODE_ALL
-        player!!.playRawVideo(this, videoResId)
+        player!!.playRawVideo(this, VIDEO_RES_ID)
         player!!.playWhenReady = true
         //        player!!.playVideoFromUrl(this, "https://sample-videos.com/video123/mkv/240/big_buck_bunny_240p_20mb.mkv", cache!!)
         //        player!!.playVideoFromUrl(this, "https://sample-videos.com/video123/mkv/720/big_buck_bunny_720p_1mb.mkv", cache!!)
@@ -114,6 +110,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
+        imageView.doOnPreDraw {
+            val imageWidth: Float = imageView.drawable.intrinsicWidth.toFloat()
+            val imageHeight: Float = imageView.drawable.intrinsicHeight.toFloat()
+            imageView.imageMatrix = prepareMatrix(imageView, imageWidth, imageHeight, FOCAL_POINT)
+        }
         playVideo()
     }
 
@@ -127,17 +128,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    companion object {
-        const val MAX_PREVIEW_CACHE_SIZE_IN_BYTES = 20L * 1024L * 1024L
-        var cache: com.google.android.exoplayer2.upstream.cache.Cache? = null
-
-        @JvmStatic
-        fun getUserAgent(context: Context): String {
-            val packageManager = context.packageManager
-            val info = packageManager.getPackageInfo(context.packageName, 0)
-            val appName = info.applicationInfo.loadLabel(packageManager).toString()
-            return Util.getUserAgent(context, appName)
-        }
+    override fun onDestroy() {
+        super.onDestroy()
+        if (!isChangingConfigurations)
+            cache?.release()
     }
 
     fun SimpleExoPlayer.playRawVideo(context: Context, @RawRes rawVideoRes: Int) {

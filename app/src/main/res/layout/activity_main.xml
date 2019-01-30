@@ -1,22 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout
-  android:id="@+id/noClipsView" xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
-  xmlns:tools="http://schemas.android.com/tools" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#fff">
+    android:id="@+id/noClipsView" xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto" xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent" android:layout_height="match_parent" tools:background="#fff">
 
-  <androidx.cardview.widget.CardView
-    android:layout_width="108dp" android:layout_height="192dp" android:layout_gravity="center" android:layout_margin="1dp" app:cardCornerRadius="16dp">
+    <!--To test same aspect ration, use 108dp*192dp, for example-->
+    <androidx.cardview.widget.CardView
+        android:layout_width="108dp" android:layout_height="192dp" android:layout_gravity="center"
+        android:layout_margin="1dp" app:cardCornerRadius="16dp">
 
-    <!--<com.google.android.exoplayer2.ui.PlayerView-->
-    <!--android:id="@+id/playerView" android:layout_width="match_parent" android:layout_height="match_parent"-->
-    <!--app:keep_content_on_player_reset="true" app:resize_mode="zoom" app:surface_type="surface_view"-->
-    <!--app:use_controller="false" tools:foreground="#33ff0000"/>-->
+        <!--<com.google.android.exoplayer2.ui.PlayerView-->
+        <!--android:id="@+id/playerView" android:layout_width="match_parent" android:layout_height="match_parent"-->
+        <!--app:keep_content_on_player_reset="true" app:resize_mode="zoom" app:surface_type="surface_view"-->
+        <!--app:use_controller="false" tools:foreground="#33ff0000"/>-->
 
-    <TextureView
-      android:id="@+id/textureView" android:layout_width="match_parent" android:layout_height="match_parent" tools:foreground="#33ff0000"/>
+        <TextureView
+            android:id="@+id/textureView" android:layout_width="match_parent" android:layout_height="match_parent"
+            tools:foreground="#33ff0000"/>
 
-    <ImageView
-      android:id="@+id/imageView" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="matrix" tools:scaleType="centerCrop"
-      tools:src="@drawable/test"/>
-  </androidx.cardview.widget.CardView>
+        <ImageView
+            android:id="@+id/imageView" android:layout_width="match_parent" android:layout_height="match_parent"
+            android:scaleType="matrix" tools:scaleType="centerCrop" tools:src="@drawable/test"/>
+    </androidx.cardview.widget.CardView>
 
 </FrameLayout>
