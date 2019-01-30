@@ -1,10 +1,13 @@
 package com.example.user.myapplication
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Matrix
 import android.graphics.PointF
 import android.net.Uri
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.view.TextureView
 import android.view.View
 import androidx.annotation.RawRes
@@ -30,7 +33,7 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
     companion object {
         private val FOCAL_POINT = PointF(0.5f, 0.2f)
-//        private val CENTER_CROP_FOCAL_POINT = PointF(0.5f, 0.5f)
+        //        private val CENTER_CROP_FOCAL_POINT = PointF(0.5f, 0.5f)
         private const val IMAGE_RES_ID = R.drawable.test
         private const val VIDEO_RES_ID = R.raw.test
         private var cache: Cache? = null
@@ -133,6 +136,27 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         if (!isChangingConfigurations)
             cache?.release()
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        var url: String? = null
+        when (item.itemId) {
+            R.id.menuItem_all_my_apps -> url = "https://play.google.com/store/apps/developer?id=AndroidDeveloperLB"
+            R.id.menuItem_all_my_repositories -> url = "https://github.com/AndroidDeveloperLB"
+            R.id.menuItem_current_repository_website -> url = "https://github.com/AndroidDeveloperLB/ExoPlayerScaleCrop"
+        }
+        if (url == null)
+            return true
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        intent.addFlags(Intent.FLAG_ACTIVITY_NO_HISTORY or Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET)
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK)
+        startActivity(intent)
+        return true
     }
 
     fun SimpleExoPlayer.playRawVideo(context: Context, @RawRes rawVideoRes: Int) {
