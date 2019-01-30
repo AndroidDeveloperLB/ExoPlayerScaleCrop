@@ -30,6 +30,7 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
     companion object {
         private val FOCAL_POINT = PointF(0.5f, 0.2f)
+//        private val CENTER_CROP_FOCAL_POINT = PointF(0.5f, 0.5f)
         private const val IMAGE_RES_ID = R.drawable.test
         private const val VIDEO_RES_ID = R.raw.test
         private var cache: Cache? = null
@@ -59,7 +60,7 @@ class MainActivity : AppCompatActivity() {
         if (view.visibility == View.GONE)
             return null
         val viewHeight = (view.height - view.paddingTop - view.paddingBottom).toFloat()
-        val viewWidth = (view.width - view.paddingStart - view.paddingEnd).toFloat()
+        val viewWidth = (view.width - view.paddingLeft - view.paddingRight).toFloat()
         if (viewWidth <= 0 || viewHeight <= 0)
             return null
         val matrix = Matrix()
@@ -93,10 +94,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onRenderedFirstFrame() {
-//                Log.d("AppLog", "onRenderedFirstFrame")
+                //                Log.d("AppLog", "onRenderedFirstFrame")
                 player!!.removeVideoListener(this)
                 imageView.animate().alpha(0f).setDuration(2000).start()
-//                imageView.visibility = View.INVISIBLE
+                //                imageView.visibility = View.INVISIBLE
             }
         })
         player!!.volume = 0f
